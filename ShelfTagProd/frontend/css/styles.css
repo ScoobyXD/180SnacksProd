@@ -1,0 +1,680 @@
+/**
+ * ShelfTag — Camera PWA Styles
+ * =========================
+ * Font: SF Pro Text (Apple system font via -apple-system)
+ * Labels: 9px, weight 600, uppercase, 0.8px letter-spacing
+ */
+
+/* ---- Reset & Base ---- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --accent-blue: rgba(108, 191, 255, 0.94);
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    color: #fff;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+
+/* ---- Camera Viewfinder ---- */
+#camera-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+#viewfinder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+/* ---- Focus Ring (tap-to-focus) ---- */
+/*
+ * iOS-style yellow square that appears at the tap point.
+ * Animation: appears at 1.3× scale, contracts, holds, fades out.
+ */
+#focus-ring {
+    position: fixed;
+    width: 72px;
+    height: 72px;
+    border: 2px solid #ffd60a;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 80;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#focus-ring.active {
+    animation: focus-animate 1.2s ease-out forwards;
+}
+
+@keyframes focus-animate {
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+    20%  { opacity: 1; transform: translate(-50%, -50%) scale(0.95); }
+    40%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+    70%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+
+/* ---- Shutter Blackout (iOS-style) ---- */
+#flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 100;
+}
+
+#flash.active {
+    animation: shutter-blink 0.15s ease-out forwards;
+}
+
+@keyframes shutter-blink {
+    0%   { opacity: 0; }
+    15%  { opacity: 1; }
+    60%  { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+
+/* ---- Bottom Controls Bar ---- */
+/*
+ * Three-column flex row:
+ *   [spacer]  [shutter button]  [zoom indicator]
+ * Left spacer and right container are equal width so shutter stays centered.
+ */
+#controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    z-index: 50;
+    background: linear-gradient(transparent, rgba(0,0,0,0.6));
+}
+
+/* Left container — matches the width of the right container */
+.controls-left {
+    position: absolute;
+    left: 0;
+    width: calc(50% - 50px);
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+/* Right container — centers selector in the right half (between shutter and right edge) */
+.controls-right {
+    position: absolute;
+    right: 0;
+    width: calc(50% - 50px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* ---- Small Icon Controls (gallery / zoom / mode) ---- */
+#gallery-btn,
+#zoom-btn,
+#capture-mode-btn {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.35);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+}
+
+#zoom-btn {
+    font-size: 11px;
+}
+
+#zoom-btn.hidden {
+    visibility: hidden;
+}
+
+#zoom-btn.zoomed {
+    background: rgba(255, 214, 10, 0.85);
+    color: #000;
+}
+
+#capture-mode-btn {
+    font-size: 17px;
+    margin-left: -10px;
+}
+
+#capture-mode-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+#capture-mode-btn.multi {
+    background: var(--accent-blue);
+    border-color: rgba(255,255,255,0.75);
+}
+
+#gallery-btn:active,
+#zoom-btn:active,
+#capture-mode-btn:active {
+    transform: scale(0.92);
+}
+
+/* ---- Gallery Upload Button ---- */
+#gallery-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+    opacity: 0.92;
+}
+
+#gallery-input {
+    display: none;
+}
+
+/* ---- Multi Tray ---- */
+#multi-tray {
+    position: fixed;
+    left: 0;
+    bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+    width: 56px;
+    padding: 8px 8px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(0,0,0,0.62);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 70;
+}
+
+#multi-tray.hidden {
+    display: none;
+}
+
+#multi-upload-btn {
+    width: 100%;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.35);
+    background: var(--accent-blue);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+#multi-upload-btn:disabled {
+    opacity: 0.35;
+}
+
+#multi-delete-btn {
+    position: absolute;
+    left: calc(100% + 8px);
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.28);
+    background: rgba(255, 76, 120, 0.95);
+    color: #fff;
+    display: grid;
+    place-items: center;
+}
+
+#multi-delete-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+#multi-delete-btn.hidden {
+    display: none;
+}
+
+#multi-slots {
+    margin-top: 8px;
+    display: grid;
+    grid-template-rows: repeat(4, 44px);
+    gap: 6px;
+}
+
+.multi-slot {
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.34);
+    background: rgba(220, 230, 242, 0.18);
+    background-size: cover;
+    background-position: center;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.multi-slot.filled {
+    border-color: rgba(255,255,255,0.55);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+    background-color: rgba(255,255,255,0.04);
+}
+
+.multi-slot.selected {
+    border-color: rgba(255,255,255,0.95);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.45);
+}
+
+
+/* ---- Shutter Button ---- */
+#shutter-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 4px solid rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.2);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: transform 0.1s ease;
+}
+
+#shutter-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.1s ease;
+}
+
+#shutter-btn:active {
+    transform: scale(0.92);
+}
+
+#shutter-btn:active::after {
+    transform: translate(-50%, -50%) scale(0.9);
+}
+
+#shutter-btn.disabled-multi {
+    opacity: 0.55;
+}
+
+
+/* ---- Connectivity Indicator (top-left) ---- */
+#connectivity {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+    z-index: 60;
+}
+
+#connectivity .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #34c759;
+    transition: background 0.3s ease;
+}
+
+#connectivity.offline .dot {
+    background: #ff3b30;
+}
+
+#app-version {
+    position: fixed;
+    top: calc(30px + env(safe-area-inset-top, 0px));
+    left: 24px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    z-index: 60;
+}
+
+
+/* ---- Info Box (top center, Name + Retailer) ---- */
+#info-box {
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    left: 72px;
+    right: 52px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 6px 10px;
+    z-index: 55;
+    display: flex;
+    gap: 10px;
+}
+
+#info-box .input-group {
+    flex: 1;
+    min-width: 0;
+}
+
+#info-box label {
+    display: block;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 1px;
+}
+
+#info-box input,
+#info-box select {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    padding: 3px 0;
+    min-height: 24px;
+    outline: none;
+    caret-color: #4af;
+    user-select: text;
+    -webkit-user-select: text;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+#info-box input::placeholder {
+    color: rgba(255,255,255,0.3);
+    font-style: italic;
+    font-size: 11px;
+}
+
+#info-box input:focus,
+#info-box select:focus {
+    border-bottom-color: #4af;
+}
+
+#info-box select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.75) 50%), linear-gradient(135deg, rgba(255,255,255,0.75) 50%, transparent 50%);
+    background-position: calc(100% - 13px) calc(50% - 2px), calc(100% - 8px) calc(50% - 2px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 22px;
+}
+
+#info-box select option {
+    color: #111;
+}
+
+
+/* ---- Sync Badge (top-right) ---- */
+#sync-badge {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    right: 12px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    border-radius: 50%;
+    padding: 0;
+    z-index: 60;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    background: #34c759;
+}
+
+#sync-badge.pending {
+    background: #ff3b30;
+}
+
+#sync-badge.syncing {
+    animation: pulse 1.2s ease-in-out infinite;
+    background: #ff9500;
+}
+
+#sync-badge.processing {
+    animation: pulse 0.8s ease-in-out infinite;
+    background: #0a84ff;
+}
+
+/* Thin rotating ring while upload/queue activity is in progress. */
+#sync-badge.syncing::before,
+#sync-badge.processing::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    border-top-color: rgba(255, 255, 255, 0.95);
+    border-right-color: rgba(255, 255, 255, 0.45);
+    animation: spin 0.85s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+
+/* ---- Queue Modal ---- */
+#queue-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#queue-modal.hidden {
+    display: none;
+}
+
+#queue-modal-content {
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+    width: 280px;
+    max-width: 90%;
+}
+
+#queue-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+#queue-title-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#queue-upload-spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-top-color: rgba(255, 255, 255, 0.95);
+    opacity: 0;
+    animation: spin 0.85s linear infinite;
+    transition: opacity 0.2s ease;
+}
+
+#queue-upload-spinner.active {
+    opacity: 1;
+}
+
+#queue-modal-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+#queue-stats {
+    margin-bottom: 16px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 15px;
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-row span:last-child {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+#clear-queue-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #ff3b30;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+#clear-queue-btn:active {
+    opacity: 0.7;
+}
+
+#clear-queue-note {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: center;
+    line-height: 1.4;
+}
+
+
+/* ---- Toast Messages ---- */
+#toast {
+    position: fixed;
+    top: calc(54px + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%) translateY(-60px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 20px;
+    white-space: nowrap;
+    z-index: 200;
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    pointer-events: none;
+}
+
+#toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+
+/* ---- Error Screen ---- */
+#error-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    z-index: 500;
+    text-align: center;
+}
+
+#error-screen.hidden {
+    display: none;
+}
+
+#error-screen .error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+#error-message {
+    font-size: 16px;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.5;
+    max-width: 300px;
+}

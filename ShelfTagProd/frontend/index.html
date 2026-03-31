@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>ShelfTag — 180 Snacks</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+    <!-- CAMERA VIEWFINDER -->
+    <div id="camera-container">
+        <video id="viewfinder" autoplay playsinline muted></video>
+    </div>
+
+    <!-- FOCUS RING (positioned dynamically via JS at tap location) -->
+    <div id="focus-ring"></div>
+
+    <!-- FLASH OVERLAY -->
+    <div id="flash"></div>
+
+    <!-- CONNECTIVITY INDICATOR (top-left) -->
+    <div id="connectivity">
+        <div class="dot"></div>
+        <span id="connectivity-text">Online</span>
+    </div>
+    <div id="app-version">v00.00</div>
+
+    <!-- SYNC BADGE (top-right, tappable → queue modal) -->
+    <div id="sync-badge">0</div>
+
+    <!-- QUEUE MODAL -->
+    <div id="queue-modal" class="hidden">
+        <div id="queue-modal-content">
+            <div id="queue-modal-header">
+                <span id="queue-title-wrap">
+                    <span>Sync Queue</span>
+                    <span id="queue-upload-spinner" aria-hidden="true"></span>
+                </span>
+                <button id="queue-modal-close" aria-label="Close">✕</button>
+            </div>
+            <div id="queue-stats">
+                <div class="stat-row">
+                    <span>Pending</span>
+                    <span id="stat-pending">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Uploading</span>
+                    <span id="stat-syncing">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Failed</span>
+                    <span id="stat-failed">0</span>
+                </div>
+            </div>
+            <button id="clear-queue-btn">Clear Queue</button>
+            <p id="clear-queue-note">Removes all queued photos from this device.<br>Photos already in Airtable are not affected.</p>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast"></div>
+
+    <!-- INFO BOX (top center, Name + Retailer side by side) -->
+    <div id="info-box">
+        <div class="input-group">
+            <label for="user-name">Name</label>
+            <input type="text" id="user-name" placeholder="Tap to enter" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="input-group">
+            <label for="retailer-name">Retailer</label>
+            <select id="retailer-name" aria-label="Select retailer">
+                <option value="">Select retailer</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- MULTI TRAY (shown when multi mode is active) -->
+    <div id="multi-tray" class="hidden" aria-live="polite">
+        <button id="multi-upload-btn" aria-label="Queue multi photos">↑</button>
+        <button id="multi-delete-btn" class="hidden" aria-label="Delete selected multi photo">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M9 6V4.8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <rect x="6.5" y="6.5" width="11" height="13.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M10 10v6M12 10v6M14 10v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <div id="multi-slots">
+            <div class="multi-slot" data-slot="0"></div>
+            <div class="multi-slot" data-slot="1"></div>
+            <div class="multi-slot" data-slot="2"></div>
+            <div class="multi-slot" data-slot="3"></div>
+        </div>
+    </div>
+
+    <!-- BOTTOM CONTROLS -->
+    <div id="controls">
+        <div class="controls-left">
+            <button id="gallery-btn" aria-label="Upload from gallery">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13Zm1.5 0v8.65l3.13-2.94a1.5 1.5 0 0 1 2.04 0l2.3 2.16 2.97-2.79a1.5 1.5 0 0 1 2.06.03l.5.5V5.5h-13Zm13 13v-5.27l-1.53-1.44-2.98 2.8a1.5 1.5 0 0 1-2.04 0l-2.3-2.16-4.15 3.9V18.5h13ZM8.75 10a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5Z"/>
+                </svg>
+            </button>
+            <button id="zoom-btn" class="hidden" aria-label="Reset zoom">1.0×</button>
+            <input type="file" id="gallery-input" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple>
+        </div>
+        <button id="shutter-btn" aria-label="Take photo"></button>
+        <div class="controls-right">
+            <button id="capture-mode-btn" aria-label="Toggle single or multi mode">1</button>
+        </div>
+    </div>
+
+    <!-- ERROR SCREEN -->
+    <div id="error-screen" class="hidden">
+        <div class="error-icon">📷</div>
+        <p id="error-message">Camera error</p>
+    </div>
+
+    <!-- APP SCRIPTS -->
+    <script type="module" src="/js/app.js"></script>
+
+    <!-- CONNECTIVITY DETECTION (inline) -->
+    <script>
+        function updateConnectivity() {
+            const el = document.getElementById('connectivity');
+            const text = document.getElementById('connectivity-text');
+            if (navigator.onLine) {
+                el.classList.remove('offline');
+                text.textContent = 'Online';
+            } else {
+                el.classList.add('offline');
+                text.textContent = 'Offline';
+            }
+        }
+        window.addEventListener('online', updateConnectivity);
+        window.addEventListener('offline', updateConnectivity);
+        updateConnectivity();
+    </script>
+
+</body>
+</html>
