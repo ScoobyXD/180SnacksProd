@@ -26,7 +26,7 @@ bucket_name = "shelftag-images"
 
 # Environment variables (non-secret — safe to commit)
 [vars]
-AIRTABLE_BASE_ID = "app6VXhFVBp1H215u"
+AIRTABLE_BASE_ID = "apptXpUURYo8yLGBD"
 AIRTABLE_TABLE_ID = "tblvy7IdKWweV8Jdj"
 
 # Secrets (set via `wrangler secret put`, NEVER in this file):
