@@ -7,7 +7,7 @@
 #               npx wrangler secret put AIRTABLE_PAT
 # ============================================================================
 
-name = "shelftagdev"
+name = "shelftagprod"
 main = "src/worker.js"
 compatibility_date = "2024-09-23"
 
@@ -22,7 +22,7 @@ directory = "./frontend"
 # Create the bucket first:  npx wrangler r2 bucket create shelftag-images
 [[r2_buckets]]
 binding = "IMAGES"
-bucket_name = "shelftag-images"
+bucket_name = "shelftagprod"
 
 # Environment variables (non-secret — safe to commit)
 [vars]
