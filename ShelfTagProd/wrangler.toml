@@ -7,7 +7,7 @@
 #               npx wrangler secret put AIRTABLE_PAT
 # ============================================================================
 
-name = "shelftagdev"
+name = "shelftagprod"
 main = "src/worker.js"
 compatibility_date = "2024-09-23"
 
@@ -17,17 +17,17 @@ compatibility_date = "2024-09-23"
 [assets]
 directory = "./frontend"
 
-# R2 bucket for storing product photos.
-# Airtable downloads images from here via presigned URLs.
-# Create the bucket first:  npx wrangler r2 bucket create shelftag-images
+# R2 bucket for storing product photos (prod repo/binding).
 [[r2_buckets]]
 binding = "IMAGES"
-bucket_name = "shelftag-images"
+bucket_name = "shelftagprod"
 
 # Environment variables (non-secret — safe to commit)
 [vars]
 AIRTABLE_BASE_ID = "apptXpUURYo8yLGBD"
 AIRTABLE_TABLE_ID = "tblvy7IdKWweV8Jdj"
+# Optional: override public image host for Airtable attachments (e.g. https://pub-<id>.r2.dev)
+# PUBLIC_IMAGE_BASE_URL = "https://pub-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.r2.dev"
 
 # Secrets (set via `wrangler secret put`, NEVER in this file):
 #   GEMINI_API_KEY   — Google AI Studio API key

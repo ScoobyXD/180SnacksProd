@@ -33,7 +33,7 @@ export default {
             }
 
             if (url.pathname === '/api/sync' && request.method === 'POST') {
-                return withCORS(await handleSync(request, env));
+                return withCORS(await handleSync(request, env, url));
             }
 
             // ---- Serve images from R2 ----
@@ -73,7 +73,7 @@ function handleHealth(env) {
 // SYNC PIPELINE — the core of the app
 // ============================================================================
 
-async function handleSync(request, env) {
+async function handleSync(request, env, requestUrl) {
     // ---- Parse request ----
     const body = await request.json();
     const { image_base64, images_base64, metadata } = body;
@@ -93,6 +93,7 @@ async function handleSync(request, env) {
     // ---- Step 1: Store images in R2 (with metadata for debugging) ----
     const filenames = [];
     const imageUrls = [];
+    const imageBaseUrl = resolveImageBaseUrl(env, requestUrl);
     for (let i = 0; i < imageList.length; i++) {
         const filename = `${crypto.randomUUID()}-${i + 1}.jpg`;
         const imageBytes = base64ToBytes(imageList[i]);
@@ -112,7 +113,7 @@ async function handleSync(request, env) {
         });
 
         filenames.push(filename);
-        imageUrls.push(`https://pub-a9ceafcd290c4d5eb643aeac5b4a67d1.r2.dev/${filename}`);
+        imageUrls.push(`${imageBaseUrl}/uploads/${filename}`);
         console.log(`[Sync] Image stored in R2: ${filename} (${(imageBytes.byteLength / 1024).toFixed(0)} KB)`);
     }
 
@@ -161,6 +162,13 @@ async function handleSync(request, env) {
             r2_filenames: filenames,
         });
     }
+}
+
+function resolveImageBaseUrl(env, requestUrl) {
+    const configuredBaseUrl = typeof env.PUBLIC_IMAGE_BASE_URL === 'string'
+        ? env.PUBLIC_IMAGE_BASE_URL.trim()
+        : '';
+    return (configuredBaseUrl || requestUrl.origin).replace(/\/$/, '');
 }
 
 
