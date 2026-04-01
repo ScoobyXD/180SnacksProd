@@ -68,16 +68,16 @@ This takes about 5 minutes.
 - **Android:** Chrome will show a banner saying "Add ShelfTag to Home Screen" → tap "Install"
 - Now you have a ShelfTag icon on your home screen that opens like a regular app
 
-**5. Enter your name.** Tap the small box in the bottom-right corner of the camera view. Type your name in the "Name" field.
+**5. Enter your name.** Tap the info box near the top-center of the camera view. Type your name in the "Name" field.
 
-**6. Enter the retailer.** In the same box, type the store name (e.g., "Walmart", "Costco", "Marshalls").
+**6. Select the retailer.** In the same box, choose from the retailer dropdown list.
 
 **7. You're done.** Your name and retailer are saved automatically. Next time you open the app, they'll still be there.
 
 ## Daily Use
 
 1. **Open ShelfTag** from your home screen.
-2. **Update the retailer name** if you're at a different store than last time. Your name stays the same — just change the retailer.
+2. **Update the retailer** if you're at a different store than last time. Your name stays the same — just select the correct retailer.
 3. **Point your phone at a product** on the shelf. Make sure you can see the product name and brand on the package, the price tag on the shelf below or beside it, and the weight/size on the package.
 4. **Tap the white shutter button** to take the photo. You'll see a brief flash — that means it worked.
 5. **Keep going.** Take photos of as many products as you need. Each photo is saved automatically.
@@ -88,7 +88,7 @@ This takes about 5 minutes.
 
 **Bad signal in a store?** No problem. Photos are saved on your phone and will upload as soon as you get signal again — even if you close the app.
 
-**Changing retailers?** Just tap the retailer name in the bottom-right box and type the new store name.
+**Changing retailers?** Tap the retailer dropdown in the top info box and select the current store.
 
 **Red badge won't go away?** Make sure you have a good internet connection. The badge shows how many photos are still waiting to upload. If it persists, check that the Cloudflare Worker is running properly.
 
@@ -148,12 +148,15 @@ Deployed at: shelftagdev.jonathankim829.workers.dev
 ### UI Spec
 
 - Fullscreen camera viewfinder (looks exactly like the native phone camera)
-- Top bar: small semi-transparent box with two fields — user's name and retailer name
+- Top bar: small semi-transparent box with two fields — user's name and retailer selector
 - These fields persist via localStorage (survive app close, phone restart, etc.)
 - First time opening: fields are empty, user taps to type
 - Subsequent opens: fields are pre-filled from last session
 - Large circular shutter button centered at the bottom
 - Gallery upload icon on the bottom-left (same horizontal axis as shutter + zoom). Opens iOS/Android photo picker for batch queueing with an enforced cap (30 images max) to reduce Safari memory crashes.
+- Capture mode toggle on the bottom-right:
+  - **Single mode**: shutter immediately queues one photo
+  - **Multi mode**: up to 4 images are staged in a tray, then queued together as one sync item
 - Red sync badge (top-right) shows count of photos waiting to upload. Tappable — opens queue modal with stats and "Clear Queue" button.
 - Green/red connectivity dot (top-left) shows online/offline status
 - Camera flash effect on capture for visual feedback
@@ -169,13 +172,13 @@ Step by step, what happens when a user takes a photo:
 1. User takes photo → full resolution JPEG captured via `getUserMedia` API
 2. Photo + metadata (user name, retailer, timestamp MM/DD/YYYY HH:MM, GPS coords) stored in IndexedDB
 3. Sync module detects connectivity (`navigator.onLine` + Worker health check ping)
-4. When online: POST `{ image_base64, metadata }` to `/api/sync`
+4. When online: POST `{ images_base64, metadata }` to `/api/sync` (single capture still works via legacy `image_base64`)
 5. Worker stores image in Cloudflare R2 → constructs a public R2 URL
 6. Worker sends image to Gemini Flash Lite with extraction prompt → gets structured JSON
 7. Worker creates Airtable record via REST API with all fields + image URL
 8. Airtable downloads the image from the public R2 URL and stores its own copy
 9. Airtable Formula fields (RT/oz, FX NW oz, RT/oz Discounted) compute automatically from the written data
-10. Worker responds success → frontend marks photo as synced → deletes local copy from IndexedDB
+10. Worker acknowledges receipt (success or pipeline failure) → frontend deletes local copy from IndexedDB
 
 ## Tech Stack
 
@@ -198,17 +201,6 @@ shelftag/
 │
 ├── src/
 │   └── worker.js                 # Cloudflare Worker: API routes, Gemini extraction, Airtable, R2 image serving
-│
-├── backend/                      # Legacy Python backend (reference only — not deployed)
-│   ├── .env                      # API keys (git-ignored)
-│   ├── requirements.txt
-│   ├── main.py
-│   ├── models/
-│   │   └── schemas.py
-│   └── services/
-│       ├── gemini_service.py
-│       ├── storage_service.py
-│       └── airtable_service.py
 │
 ├── docs/
 │   └── LLM.md                    # Documentation (this file)
@@ -410,7 +402,7 @@ These steps have already been done and don't need to be repeated:
 ```bash
 cd shelftag
 npm install                                    # Installs wrangler
-npx wrangler r2 bucket create shelftag-images  # R2 bucket for product images
+npx wrangler r2 bucket create shelftagprod     # R2 bucket for product images
 npx wrangler secret put GEMINI_API_KEY         # Google AI Studio key
 npx wrangler secret put AIRTABLE_PAT           # Airtable Personal Access Token
 npx wrangler deploy                            # Initial deployment
@@ -428,7 +420,7 @@ npx wrangler deploy
 
 That's it — one command pushes both the Worker code and all `frontend/` static assets together. Changes are live within seconds.
 
-If you update the service worker cache version in `sw.js` (e.g. `shelftag-v15` → `shelftag-v16`), phones will pull the new files on next app open. Bump the version any time you change CSS/JS/HTML that the SW caches. Also bump the in-app version label (`APP_VERSION` in `frontend/js/app.js`) by **0.01** every deploy.
+If you update the service worker cache version in `sw.js` (e.g. `shelftag-v15` → `shelftag-v16`), phones will pull the new files on next app open. Bump that cache key any time you change CSS/JS/HTML that the SW caches. Also bump the in-app version label (`APP_VERSION` in `frontend/js/app.js`) every frontend deploy. The cache key format and app label format can differ.
 
 The Worker is live at: `shelftagdev.jonathankim829.workers.dev`
 
@@ -436,7 +428,7 @@ The Worker is live at: `shelftagdev.jonathankim829.workers.dev`
 
 1. Open `shelftagdev.jonathankim829.workers.dev` on your phone
 2. Allow camera access when prompted
-3. Enter your name and a retailer name
+3. Enter your name and select a retailer
 4. Point the camera at a snack product and tap the shutter button
 5. Check `wrangler tail` for logs showing image stored → Gemini extraction → Airtable record created
 6. Check Airtable — a new row should appear with all fields populated
@@ -445,7 +437,7 @@ The Worker is live at: `shelftagdev.jonathankim829.workers.dev`
 
 - **Live logs:** `wrangler tail` streams real-time Worker logs
 - **Dashboard:** Cloudflare dashboard → Workers & Pages → shelftag → Logs
-- **R2 storage:** Cloudflare dashboard → R2 → shelftag-images bucket
+- **R2 storage:** Cloudflare dashboard → R2 → shelftagprod bucket
 
 ## Phone Camera Access
 
@@ -519,7 +511,7 @@ Jonathan initially asked why we don't just use "browser cache." The distinction:
 
 **Service worker update behavior:** ShelfTag now sends `SKIP_WAITING` to newly installed workers and reloads on `controllerchange`, so new deployments should activate on the next open/reload instead of requiring multiple full app closes. Still bump `CACHE_VERSION` in `sw.js` whenever frontend assets change.
 
-**Version display + bump rule:** The UI shows an explicit version under the top-left status indicator (format `v##.##`; current is `v01.05`). Every deploy that changes frontend behavior must increment by **0.01** and keep this aligned with the service worker cache bump.
+**Version display + bump rule:** The UI shows an explicit version under the top-left status indicator (format `v##.##`; current code value is `v01.07`). Bump this label for frontend behavior changes, and also bump `CACHE_VERSION` in `sw.js` in the same deploy. The two values can use different formats.
 
 **Gallery upload memory guardrail:** iOS Safari PWAs can crash under high in-memory image loads. Keep batch uploads capped and process gallery files sequentially (never decode dozens of full-res photos in parallel). Current cap: 30 selected images per batch.
 
@@ -547,7 +539,7 @@ Jonathan initially asked why we don't just use "browser cache." The distinction:
 
 - [x] Cloudflare Workers deployment (`shelftagdev.jonathankim829.workers.dev`)
 - [x] Gemini Flash Lite API key — set via `wrangler secret put GEMINI_API_KEY`, confirmed working
-- [x] R2 bucket created (`shelftag-images`) and bound to Worker as `IMAGES`, confirmed uploading images
+- [x] R2 bucket bound as `IMAGES` (current `wrangler.toml` bucket: `shelftagprod`)
 - [x] Full backend pipeline deployed: `src/worker.js` (R2 storage → Gemini Flash Lite → Airtable)
 - [x] R2 custom metadata attached to images (user_name, retailer, timestamp, GPS coords)
 - [x] Phone → R2 upload confirmed working (images appear in Cloudflare dashboard)
@@ -556,7 +548,7 @@ Jonathan initially asked why we don't just use "browser cache." The distinction:
 - [x] Tap-to-focus with iOS-style yellow focus ring + hardware `focusMode` toggle (best-effort)
 - [x] iOS background upload via `visibilitychange` flush (parallel, fire-all-at-once) — **did not work reliably in practice, removed**
 - [x] Parallel foreground uploads (fixed 4 concurrent via `Promise.allSettled`)
-- [x] Cache version bumped to `shelftag-v16`
+- [x] Cache version currently `shelftag-v18`
 - [ ] **Airtable PAT — needs re-entry** (current token returns 401; likely truncated during paste)
 - [ ] End-to-end test with real snack product photo (once Airtable PAT is fixed)
 - [ ] Custom domain setup (e.g. `shelftag.180snacks.com`)

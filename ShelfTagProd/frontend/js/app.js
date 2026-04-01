@@ -25,9 +25,10 @@ import { initGeolocation, getCurrentPosition } from './geo.js';
  * Displayed in the top-left status UI as "v##.##".
  *
  * VERSION BUMP RULE:
- * - Increase this by exactly 0.01 on every deploy that changes frontend behavior.
- * - Keep the 2-digit major + 2-digit minor format (v01.00, v01.01, v01.02...).
- * - Keep this aligned with CACHE_VERSION in /frontend/sw.js.
+ * - Bump this value on every deploy that changes frontend behavior.
+ * - Keep the readable 2-digit major + 2-digit minor format (v01.00, v01.01, ...).
+ * - Also bump CACHE_VERSION in /frontend/sw.js in the same deploy so clients refresh cache.
+ * - These two version values do NOT need to share the same numeric format.
  */
 const APP_VERSION = 'v01.07';
 
