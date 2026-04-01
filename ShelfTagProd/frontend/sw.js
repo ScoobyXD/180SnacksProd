@@ -22,8 +22,8 @@
 
 // Bump this on every frontend deploy.
 // IMPORTANT FOR FUTURE LLMs/ENGINEERS:
-// - Keep APP_VERSION in /frontend/js/app.js in sync with this cache bump.
-// - Increment app version by 0.01 each deploy (v01.00 -> v01.01 -> v01.02 ...).
+// - Also bump APP_VERSION in /frontend/js/app.js in the same deploy.
+// - CACHE_VERSION and APP_VERSION can use different formats as long as both are updated.
 const CACHE_VERSION = 'shelftag-v18';
 
 // Files to cache for offline use
