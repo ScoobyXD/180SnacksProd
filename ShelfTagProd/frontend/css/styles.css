@@ -15,6 +15,9 @@
 
 :root {
     --accent-blue: rgba(108, 191, 255, 0.94);
+    --status-green: #22c55e;
+    --status-orange: #f59e0b;
+    --status-red: #ef4444;
 }
 
 html, body {
@@ -245,7 +248,7 @@ html, body {
     height: 32px;
     border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.28);
-    background: rgba(255, 76, 120, 0.95);
+    background: color-mix(in srgb, var(--status-red) 88%, #ffffff 12%);
     color: #fff;
     display: grid;
     place-items: center;
@@ -346,12 +349,12 @@ html, body {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #34c759;
+    background: var(--status-green);
     transition: background 0.3s ease;
 }
 
 #connectivity.offline .dot {
-    background: #ff3b30;
+    background: var(--status-red);
 }
 
 #app-version {
@@ -462,16 +465,16 @@ html, body {
     z-index: 60;
     cursor: pointer;
     transition: background 0.3s ease;
-    background: #34c759;
+    background: var(--status-green);
 }
 
 #sync-badge.pending {
-    background: #ff3b30;
+    background: var(--status-red);
 }
 
 #sync-badge.syncing {
     animation: pulse 1.2s ease-in-out infinite;
-    background: #ff9500;
+    background: var(--status-orange);
 }
 
 #sync-badge.processing {
@@ -598,7 +601,7 @@ html, body {
     padding: 12px;
     border: none;
     border-radius: 10px;
-    background: #ff3b30;
+    background: var(--status-red);
     color: #fff;
     font-size: 15px;
     font-weight: 600;

@@ -17,6 +17,8 @@
  *   env.AIRTABLE_TABLE_ID — Airtable table ID
  */
 
+const WORKER_VERSION = '2026-04-02-r1';
+
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
@@ -37,8 +39,8 @@ export default {
             }
 
             // ---- Serve images from R2 ----
-            if (url.pathname.startsWith('/uploads/') && request.method === 'GET') {
-                return await handleImage(url.pathname, env);
+            if (url.pathname.startsWith('/uploads/') && (request.method === 'GET' || request.method === 'HEAD')) {
+                return await handleImage(url.pathname, request.method, env);
             }
 
             // ---- Nothing matched ----
@@ -65,6 +67,7 @@ function handleHealth(env) {
         gemini_configured: !!env.GEMINI_API_KEY,
         airtable_configured: !!env.AIRTABLE_PAT,
         r2_configured: !!env.IMAGES,
+        worker_version: WORKER_VERSION,
     });
 }
 
@@ -74,6 +77,8 @@ function handleHealth(env) {
 // ============================================================================
 
 async function handleSync(request, env) {
+    const requestOrigin = new URL(request.url).origin;
+    const imageBaseUrl = String(env.IMAGE_BASE_URL || '').trim().replace(/\/$/, '') || requestOrigin;
     // ---- Parse request ----
     const body = await request.json();
     const { image_base64, images_base64, metadata } = body;
@@ -88,12 +93,11 @@ async function handleSync(request, env) {
         );
     }
 
-    console.log(`[Sync] Processing ${imageList.length} image(s) from ${metadata.user_name} at ${metadata.retailer}`);
+    console.log(`[Sync ${WORKER_VERSION}] Processing ${imageList.length} image(s) from ${metadata.user_name} at ${metadata.retailer}`);
 
     // ---- Step 1: Store images in R2 (with metadata for debugging) ----
     const filenames = [];
     const imageUrls = [];
-
     for (let i = 0; i < imageList.length; i++) {
         const filename = `${crypto.randomUUID()}-${i + 1}.jpg`;
         const imageBytes = base64ToBytes(imageList[i]);
@@ -113,7 +117,7 @@ async function handleSync(request, env) {
         });
 
         filenames.push(filename);
-        imageUrls.push(`https://pub-ce35bbb931294006a06fcfad18a09d01.r2.dev/${filename}`);
+        imageUrls.push(`${imageBaseUrl}/uploads/${filename}`);
         console.log(`[Sync] Image stored in R2: ${filename} (${(imageBytes.byteLength / 1024).toFixed(0)} KB)`);
     }
 
@@ -169,6 +173,24 @@ async function handleSync(request, env) {
 // GEMINI FLASH LITE — Image → Structured Product Data
 // ============================================================================
 
+
+const PRODUCT_CATEGORIES = [
+    "Nuts",
+    "Seeds",
+    "Trail Mix",
+    "Clusters",
+    "Bars",
+    "Confectionery",
+    "Candy",
+    "Chips",
+    "Savory Snack",
+    "Popcorn",
+    "Snack Mix",
+    "Dried Fruit",
+    "Frozen/Refrigerated",
+    "Others",
+];
+
 const EXTRACTION_PROMPT = `You are analyzing one or more photos of the SAME snack product on a retail store shelf.
 Your job is to combine information across all provided images and extract specific product information.
 
@@ -184,25 +206,29 @@ Extract the following fields:
    - Example: "Almonds, Walnuts, Raisins, Dried Cranberries, Hazelnuts, Pecans"
    - Look for ingredient callouts on the front of the package, NOT the nutrition facts panel.
 
-4. **count**: The weight or size exactly as printed on the package (e.g. "16oz", "8ct 1.75oz", "1 LB 454g").
+4. **category**: Classify the product into EXACTLY ONE of these categories:
+   - "Nuts", "Seeds", "Trail Mix", "Clusters", "Bars", "Confectionery", "Candy", "Chips", "Savory Snack", "Popcorn", "Snack Mix", "Dried Fruit", "Frozen/Refrigerated", "Others"
+   - Use "Others" only if none of the other categories clearly fit.
+
+5. **count**: The weight or size exactly as printed on the package (e.g. "16oz", "8ct 1.75oz", "1 LB 454g").
    - Copy this exactly as written on the package.
 
-5. **type**: Classify the product packaging as ONE of these three options:
+6. **type**: Classify the product packaging as ONE of these three options:
    - "Single Bag" — a single bag/pouch/container sold individually
    - "Multi Box" — a box containing multiple individual bags/pouches
    - "Multi Bag" — multiple bags bundled/wrapped together as one unit
 
-6. **nw_oz**: The total net weight in OUNCES as a decimal number.
+7. **nw_oz**: The total net weight in OUNCES as a decimal number.
    - For single items: just the weight in oz (convert from grams if needed: grams ÷ 28.3495)
    - For multi-packs: multiply count × per-unit weight (e.g. 8 × 1.75oz = 14.0)
    - Return as a number, not a string.
 
-7. **retail_regular**: The regular retail price from the shelf tag or price label.
+8. **retail_regular**: The regular retail price from the shelf tag or price label.
    - Look for the price tag on the shelf, NOT on the product packaging.
    - If both a sale price and regular price are shown, use the REGULAR price.
    - Return as a number without the dollar sign (e.g. 4.19, not "$4.19").
 
-8. **retail_discounted**: The discounted/sale price from the shelf tag if present.
+9. **retail_discounted**: The discounted/sale price from the shelf tag if present.
    - Return the discounted price when it is explicitly shown (club price, sale price, promo price).
    - If no discounted price is visible, return null.
    - Return as a number without the dollar sign.
@@ -221,13 +247,14 @@ const RESPONSE_SCHEMA = {
         flavor: { type: "string", nullable: true },
         brand: { type: "string", nullable: true },
         flavor_description: { type: "string", nullable: true },
+        category: { type: "string", nullable: true, enum: PRODUCT_CATEGORIES },
         count: { type: "string", nullable: true },
         type: { type: "string", nullable: true, enum: ["Single Bag", "Multi Box", "Multi Bag"] },
         nw_oz: { type: "number", nullable: true },
         retail_regular: { type: "number", nullable: true },
         retail_discounted: { type: "number", nullable: true },
     },
-    required: ["flavor", "brand", "flavor_description", "count", "type", "nw_oz", "retail_regular", "retail_discounted"]
+    required: ["flavor", "brand", "flavor_description", "category", "count", "type", "nw_oz", "retail_regular", "retail_discounted"]
 };
 
 
@@ -300,6 +327,7 @@ async function createAirtableRecord(extraction, metadata, imageUrls, pat, baseId
     if (extraction.flavor != null) fields["Flavor"] = extraction.flavor;
     if (extraction.brand != null) fields["Brand"] = extraction.brand;
     if (extraction.flavor_description != null) fields["Flavor Description"] = extraction.flavor_description;
+    if (extraction.category != null) fields["Category"] = extraction.category;
     if (extraction.count != null) fields["Count"] = extraction.count;
     if (extraction.type != null) fields["Type"] = extraction.type;
     if (extraction.nw_oz != null) fields["NW oz"] = extraction.nw_oz;
@@ -350,7 +378,7 @@ async function createAirtableRecord(extraction, metadata, imageUrls, pat, baseId
 // IMAGE SERVING — Serve product photos from R2
 // ============================================================================
 
-async function handleImage(pathname, env) {
+async function handleImage(pathname, method, env) {
     // pathname is like "/uploads/abc123.jpg"
     const key = pathname.replace('/uploads/', '');
 
@@ -359,20 +387,25 @@ async function handleImage(pathname, env) {
         return new Response('Image not found', { status: 404 });
     }
 
-    return new Response(object.body, {
-        headers: {
-            'Content-Type': object.httpMetadata?.contentType || 'image/jpeg',
-            'Content-Length': object.size,
-            'Accept-Ranges': 'bytes',
-            'Cache-Control': 'public, max-age=86400',
-        },
-    });
+    const headers = {
+        'Content-Type': object.httpMetadata?.contentType || 'image/jpeg',
+        'Content-Length': String(object.size),
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=86400',
+    };
+
+    if (method === 'HEAD') {
+        return new Response(null, { headers });
+    }
+
+    return new Response(object.body, { headers });
 }
 
 
 // ============================================================================
 // HELPERS
 // ============================================================================
+
 
 /**
  * Convert a base64 string to a Uint8Array.

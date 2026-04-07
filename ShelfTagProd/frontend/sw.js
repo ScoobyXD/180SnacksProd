@@ -24,7 +24,7 @@
 // IMPORTANT FOR FUTURE LLMs/ENGINEERS:
 // - Also bump APP_VERSION in /frontend/js/app.js in the same deploy.
 // - CACHE_VERSION and APP_VERSION can use different formats as long as both are updated.
-const CACHE_VERSION = 'shelftag-v18';
+const CACHE_VERSION = 'shelftag-v19';
 
 // Files to cache for offline use
 const CACHE_FILES = [

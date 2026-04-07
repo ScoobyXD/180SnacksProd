@@ -252,7 +252,10 @@ export async function getQueueStats() {
         request.onsuccess = () => {
             const stats = { pending: 0, syncing: 0, synced: 0, failed: 0 };
             request.result.forEach(record => {
-                stats[record.status] = (stats[record.status] || 0) + 1;
+                const imageCount = Array.isArray(record.images_base64) && record.images_base64.length > 0
+                    ? record.images_base64.length
+                    : 1;
+                stats[record.status] = (stats[record.status] || 0) + imageCount;
             });
             resolve(stats);
         };
