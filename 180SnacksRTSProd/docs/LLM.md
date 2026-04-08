@@ -13,9 +13,15 @@ This project is intentionally a thin orchestration/UI layer, not the place for r
 - Sequential pipeline execution with live status/log output.
 - One active run at a time.
 - Displays row confirmation status from ExcelToAirtable logs (e.g., `5000/5000 rows uploaded`, with updated-row monitor).
+- Pipeline project directories are configurable via environment variables:
+  - `IRI_DIR` (default: `IRIDev`)
+  - `EXCEL_DIR` (default: `ExcelToAirtableDev`)
+  This allows Dev→Prod folder-copy workflows without code edits when folder names change.
+- `server.js` loads a committed `.envsoft` file from the RTS project root on startup for non-secret defaults (for example: folder names like `IRIDev` / `IRIProd`).
+- `server.js` then loads local `.env` (if present) so private per-machine overrides can stay out of git.
 - Cleanup at end of every run (success or failure):
-  - Delete `.xlsx` in `IRIDev/artifacts/downloads`
-  - Delete `.xlsx` in `ExcelToAirtableDev/artifacts`
+  - Delete `.xlsx` in `${IRI_DIR}/artifacts/downloads` (or default `IRIDev/...`)
+  - Delete `.xlsx` in `${EXCEL_DIR}/artifacts` (or default `ExcelToAirtableDev/...`)
 
 ## UI baseline guardrails
 Runtime canvas structure and interactions should remain stable unless explicitly changed.

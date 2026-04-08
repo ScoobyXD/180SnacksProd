@@ -1,0 +1,6 @@
+# Runtime server port
+PORT=4010
+
+# Pipeline project directories (relative to ../ from 180SnacksRTSDev)
+IRI_DIR=IRIProd
+EXCEL_DIR=ExcelToAirtableProd

@@ -5,10 +5,48 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 
+function loadDotEnv(envPath) {
+  if (!fs.existsSync(envPath)) {
+    return;
+  }
+
+  const raw = fs.readFileSync(envPath, 'utf8');
+  for (const line of raw.split(/\r?\n/u)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    const match = trimmed.match(/^([\w.-]+)\s*=\s*(.*)$/u);
+    if (!match) {
+      continue;
+    }
+
+    const key = match[1];
+    let value = match[2] ?? '';
+
+    if (
+      (value.startsWith('"') && value.endsWith('"'))
+      || (value.startsWith('\'') && value.endsWith('\''))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+loadDotEnv(path.resolve(process.cwd(), '.envsoft'));
+loadDotEnv(path.resolve(process.cwd(), '.env'));
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const publicDir = path.join(__dirname, 'public');
 const port = Number(process.env.PORT || 4010);
+const iriProjectDir = process.env.IRI_DIR;
+const excelProjectDir = process.env.EXCEL_DIR;
 
 const runs = new Map();
 
@@ -47,7 +85,7 @@ function createRun() {
         id: 'iridev-extract',
         label: 'IRIDev extraction',
         command: 'npm run run -- --mode=download',
-        cwd: path.resolve(__dirname, '..', 'IRIDev'),
+        cwd: path.resolve(__dirname, '..', iriProjectDir),
         status: 'pending',
         startedAt: null,
         finishedAt: null,
@@ -57,7 +95,7 @@ function createRun() {
         id: 'excel-to-airtable',
         label: 'ExcelToAirtable sync',
         command: 'npm run run',
-        cwd: path.resolve(__dirname, '..', 'ExcelToAirtableDev'),
+        cwd: path.resolve(__dirname, '..', excelProjectDir),
         status: 'pending',
         startedAt: null,
         finishedAt: null,
@@ -177,8 +215,8 @@ function cleanupArtifacts(run) {
     return;
   }
 
-  const downloadsDir = path.resolve(__dirname, '..', 'IRIDev', 'artifacts', 'downloads');
-  const outputDir = path.resolve(__dirname, '..', 'ExcelToAirtableDev', 'artifacts');
+  const downloadsDir = path.resolve(__dirname, '..', iriProjectDir, 'artifacts', 'downloads');
+  const outputDir = path.resolve(__dirname, '..', excelProjectDir, 'artifacts');
 
   let removedDownloads = [];
   let removedOutputs = [];
