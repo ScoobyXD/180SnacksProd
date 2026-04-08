@@ -1,0 +1,20 @@
+{
+  "name": "iridev-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "auth:setup": "node --loader ts-node/esm src/authSetup.ts",
+    "codegen": "playwright codegen https://advantage.iriworldwide.com/unify-CRX/plus/landing/0",
+    "run": "node --loader ts-node/esm src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "record:auth": "node -e \"require('fs').mkdirSync('generated',{recursive:true})\" && playwright codegen --target=playwright-test --output=generated/iri.codegen.spec.ts --load-storage=playwright/.auth/iri.json https://advantage.iriworldwide.com/unify-CRX/plus/landing/0"
+  },
+  "dependencies": {
+    "playwright": "^1.54.2"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}

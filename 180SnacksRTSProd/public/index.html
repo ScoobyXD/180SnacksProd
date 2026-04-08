@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>180SnacksRTS</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">180SNACKS RTS</div>
+      <div class="tag">CHANGE REALITY</div>
+      <div id="clock" class="clock">--:--:--</div>
+    </header>
+
+    <main class="canvas" id="canvas">
+      <div class="world" id="world">
+        <div class="grid-overlay" aria-hidden="true"></div>
+
+        <section id="pipelineGroup" class="pipeline-group" style="left: 5200px; top: 4700px;">
+          <section class="widget core-widget" style="left: 0; top: 0;">
+            <div class="widget-head">Pipeline Control</div>
+            <h1>Costco → Airtable</h1>
+            <button id="runButton" class="run-btn">Run</button>
+            <p id="statusText" class="status-line">No run started.</p>
+            <p id="uploadCheckText" class="status-line upload-check neutral hidden">Rows uploaded: --/--</p>
+          </section>
+
+          <section id="branchTree" class="branch-tree hidden" style="left: 0; top: 0;">
+            <svg class="branch-lines" viewBox="0 0 920 540" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M78 54 L78 466" />
+              <path d="M78 236 L152 294 L282 294" />
+              <path d="M78 408 L152 466 L282 466" />
+              <rect x="276" y="288" width="12" height="12" class="node" />
+              <rect x="276" y="460" width="12" height="12" class="node" />
+            </svg>
+
+            <section id="servicesWidget" class="widget child-widget services-widget" style="left: 240px; top: 210px;">
+              <div class="widget-head">Services</div>
+              <ol id="steps" class="steps"></ol>
+            </section>
+
+            <section id="logsWidget" class="widget child-widget logs-widget" style="left: 240px; top: 390px;">
+              <div class="widget-head logs-head">
+                <span>Execution Logs</span>
+                <button id="copyLogsButton" class="mini-btn" type="button">Copy Logs</button>
+              </div>
+              <pre id="logs" class="logs">Waiting for pipeline run...</pre>
+            </section>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
