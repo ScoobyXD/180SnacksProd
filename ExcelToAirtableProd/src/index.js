@@ -17,7 +17,7 @@ const CURRENCY_COLUMNS = new Set([
 ]);
 
 function loadEnvFiles() {
-  const envFiles = ['.env', '.env.local'];
+  const envFiles = ['.envsoft', '.env', '.env.local'];
   for (const filename of envFiles) {
     const fullPath = path.resolve(process.cwd(), filename);
     if (fs.existsSync(fullPath)) {
@@ -32,7 +32,8 @@ function getArg(name) {
 }
 
 function findLatestIRIDownload() {
-  const downloadsDir = path.resolve(process.cwd(), '..', 'IRIDev', 'artifacts', 'downloads');
+  const iriDir = process.env.IRI_DIR || 'IRIDev';
+  const downloadsDir = path.resolve(process.cwd(), '..', iriDir, 'artifacts', 'downloads');
   if (!fs.existsSync(downloadsDir)) {
     throw new Error(`No --input provided and downloads directory does not exist: ${downloadsDir}`);
   }
@@ -171,10 +172,14 @@ async function loadInputRows(inputPath) {
   return perSheet;
 }
 
+function resolveArtifactsDir() {
+  return process.env.EXCEL_ARTIFACTS_DIR || 'artifacts';
+}
+
 function defaultOutputPath(inputPath) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const base = path.basename(inputPath, path.extname(inputPath));
-  return path.join('artifacts', `${stamp}-${base}-normalized.xlsx`);
+  return path.join(resolveArtifactsDir(), `${stamp}-${base}-normalized.xlsx`);
 }
 
 async function saveOutputWorkbook(records, outputPath) {
@@ -297,9 +302,9 @@ async function main() {
     }
 
     if (upsertResult.rejected > 0) {
-      fs.mkdirSync('artifacts/rejects', { recursive: true });
+      fs.mkdirSync(path.join(resolveArtifactsDir(), 'rejects'), { recursive: true });
       const rejectPath = path.join(
-        'artifacts',
+        resolveArtifactsDir(),
         'rejects',
         `${new Date().toISOString().replace(/[:.]/g, '-')}-airtable-rejects.json`
       );
